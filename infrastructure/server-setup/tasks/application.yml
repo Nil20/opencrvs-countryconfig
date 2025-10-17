@@ -27,7 +27,7 @@
     mode: '0775'
     recurse: yes
 
-- name: Add current user to 'application' group
+- name: Add ansible user to 'application' group
   user:
     name: '{{ ansible_user }}'
     groups: application
@@ -44,6 +44,14 @@
 - name: Create backup logfile
   ansible.builtin.file:
     path: /var/log/opencrvs-backup.log
+    owner: '{{ ansible_user }}'
+    group: 'application'
+    state: touch
+    mode: 'u+rwX,g+rwX,o-rwx'
+
+- name: Create backup logfile for error
+  ansible.builtin.file:
+    path: /var/log/opencrvs-backup.error.log
     owner: '{{ ansible_user }}'
     group: 'application'
     state: touch

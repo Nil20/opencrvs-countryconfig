@@ -39,7 +39,7 @@ print_usage_and_exit() {
   echo 'Usage: ./restore.sh --replicas=XXX'
   echo "This script CLEARS ALL DATA and RESTORES A SPECIFIC DAY'S or label's data. This process is irreversible, so USE WITH CAUTION."
   echo "Script must receive a label parameter to restore data from that specific day in format +%Y-%m-%d i.e. 2019-01-01 or that label"
-  echo "The Hearth, OpenHIM User and Application-config db backup zips you would like to restore from: hearth-dev-{label}.gz, openhim-dev-{label}.gz, user-mgnt-{label}.gz and  application-config-{label}.gz must exist in /data/backups/mongo/ folder"
+  echo "The Hearth, Events and Application-config db backup zips you would like to restore from: hearth-dev-{label}.gz, events-{label}.gz, user-mgnt-{label}.gz and  application-config-{label}.gz must exist in /data/backups/mongo/ folder"
   echo "The Elasticsearch backup folder /data/backups/elasticsearch must exist with all previous snapshots and indices. All files are required"
   echo "The InfluxDB backup files must exist in the /data/backups/influxdb/{label} folder"
   echo ""
@@ -139,7 +139,25 @@ elasticsearch_host() {
 
 echo "delete any previously created snapshot if any.  This may error on a fresh install with a repository_missing_exception error.  Just ignore it."
 docker run --rm --network=$NETWORK appropriate/curl curl -X DELETE "http://$(elasticsearch_host)/_snapshot/ocrvs"
-docker run --rm --network=$NETWORK appropriate/curl curl -X DELETE "http://$(elasticsearch_host)/*" -v
+
+# Delete all data from elasticsearch
+#-----------------------------------
+approved_words=${ES_INDEX_PREFIXES:-"events_ ocrvs-"}
+indices=$(docker run --rm --network=$NETWORK appropriate/curl curl -sS -XGET "http://$(elasticsearch_host)/_cat/indices?h=index")
+echo "--------------------------"
+echo "🧹 cleanup for indices: $approved_words from $indices"
+echo "--------------------------"
+for index in ${indices[@]}; do
+  for approved in $approved_words; do
+    case "$index" in
+    "$approved_words"*) 
+        echo "Delete index $index..."
+        docker run --rm --network=$NETWORK appropriate/curl curl -sS -XDELETE "http://$(elasticsearch_host)/$index"
+        break
+        ;;
+    esac
+  done
+done
 
 echo "Waiting for elasticsearch to restart so that the restore script can find the updated volume."
 docker service update --force --update-parallelism 1 --update-delay 30s opencrvs_elasticsearch
@@ -163,13 +181,6 @@ rm -rf $ROOT_PATH/minio/ocrvs
 mkdir -p $ROOT_PATH/minio/ocrvs
 
 ##
-# ------ METABASE -------
-##
-
-
-rm -rf $ROOT_PATH/metabase/*
-
-##
 # ------ VSEXPORTS -------
 ##
 
@@ -180,17 +191,33 @@ mkdir -p $ROOT_PATH/vsexport
 # ------ MONGODB -------
 ##
 
-# Delete all data from Hearth, OpenHIM, User and Application-config and any other service related Mongo databases
+# Delete all data from Hearth, Events, User and Application-config and any other service related Mongo databases
 #-----------------------------------------------------------------------------------
 
 docker run --rm --network=$NETWORK mongo:4.4 mongo $(mongo_credentials) --host $HOST --eval "\
 db.getSiblingDB('hearth-dev').dropDatabase();\
-db.getSiblingDB('openhim-dev').dropDatabase();\
+db.getSiblingDB('events').dropDatabase();\
 db.getSiblingDB('user-mgnt').dropDatabase();\
 db.getSiblingDB('application-config').dropDatabase();\
 db.getSiblingDB('metrics').dropDatabase();\
 db.getSiblingDB('performance').dropDatabase();\
 db.getSiblingDB('webhooks').dropDatabase();"
+
+##
+# ------ POSTGRESQL -------
+##
+
+# Check if PostgreSQL backup exists before dropping database
+if [ -f "$ROOT_PATH/backups/postgres/events-${LABEL}.dump" ]; then
+  echo "PostgreSQL backup found. Dropping existing events database..."
+  docker run --rm \
+    -e PGPASSWORD=$POSTGRES_PASSWORD \
+    --network=$NETWORK \
+    postgres:17.6 \
+    bash -c "psql -h postgres -U $POSTGRES_USER -c 'DROP DATABASE IF EXISTS events;'"
+else
+  echo "PostgreSQL backup not found for label ${LABEL}. Skipping PostgreSQL database drop..."
+fi
 
 #####
 #
@@ -206,13 +233,29 @@ db.getSiblingDB('webhooks').dropDatabase();"
 # ------ MONGODB -------
 ##
 
-# Restore all data from a backup into Hearth, OpenHIM, User, Application-config and any other service related Mongo databases
+# Restore all data from a backup into Hearth, Events, User, Application-config and any other service related Mongo databases
 #--------------------------------------------------------------------------------------------------
 docker run --rm -v $ROOT_PATH/backups/mongo:/data/backups/mongo --network=$NETWORK mongo:4.4 bash \
--c "for db in hearth-dev openhim-dev user-mgnt application-config metrics webhooks performance; \
+-c "for db in hearth-dev events user-mgnt application-config metrics webhooks performance; \
       do mongorestore $(mongo_credentials) --host $HOST --drop --gzip --archive=/data/backups/mongo/\${db}-$LABEL.gz; \
     done"
 
+##
+# ------ POSTGRESQL -------
+##
+
+# Check if PostgreSQL backup exists before restoring
+if [ -f "$ROOT_PATH/backups/postgres/events-${LABEL}.dump" ]; then
+  echo "PostgreSQL backup found. Restoring PostgreSQL 'events' database..."
+  docker run --rm \
+    -e PGPASSWORD=$POSTGRES_PASSWORD \
+    -v $ROOT_PATH/backups/postgres:/backups \
+    --network=$NETWORK \
+    postgres:17.6 \
+    bash -c "createdb -h postgres -U $POSTGRES_USER events && pg_restore -h postgres -U $POSTGRES_USER -d events /backups/events-${LABEL}.dump"
+else
+  echo "PostgreSQL backup not found for label ${LABEL}. Skipping PostgreSQL database restore..."
+fi
 
 ##
 # ------ ELASTICSEARCH -----
@@ -225,7 +268,8 @@ sleep 10
 
 # Restore all data from a backup into search
 #-------------------------------------------
-docker run --rm --network=$NETWORK appropriate/curl curl -X POST -H "Content-Type: application/json;charset=UTF-8" "http://$(elasticsearch_host)/_snapshot/ocrvs/snapshot_$LABEL/_restore?pretty" -d '{ "indices": "ocrvs" }'
+json_payload="{\"indices\": \"ocrvs-*,events_*\", \"include_global_state\": false}"
+docker run --rm --network=$NETWORK appropriate/curl curl -X POST -H "Content-Type: application/json;charset=UTF-8" "http://$(elasticsearch_host)/_snapshot/ocrvs/snapshot_$LABEL/_restore?pretty" -d "$json_payload"
 sleep 10
 echo "Waiting 1 minute to rotate elasticsearch passwords"
 echo
@@ -255,12 +299,6 @@ tar -xzvf $ROOT_PATH/backups/minio/ocrvs-$LABEL.tar.gz -C $ROOT_PATH/minio
 
 # Restart minio again so it picks up the updated files
 docker service update --force opencrvs_minio
-
-##
-# ------ METABASE -----
-##
-tar -xzvf $ROOT_PATH/backups/metabase/ocrvs-$LABEL.tar.gz -C $ROOT_PATH/metabase
-
 
 ##
 # ------ VSEXPORT -----

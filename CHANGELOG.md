@@ -1,43 +1,288 @@
 # Changelog
 
-## 1.7.0 Release candidate
+## 1.9.0
+
+### New features
+
+- Render number of copies printed count on a certificate template. [#7586](https://github.com/opencrvs/opencrvs-core/issues/7586)
+- **Certificate Template Conditionals**: Added support for conditional filtering of certificate templates based on declaration form data and event metadata using JSON Schema validation. Templates can now be dynamically shown or hidden based on specific criteria such as demographics, registration status, action history, and regional variations. Includes helper functions for improved readability and maintainability. See [Certificate Template Conditionals documentation](docs/CERTIFICATE_TEMPLATE_CONDITIONALS.md) for implementation details. [#7585](https://github.com/opencrvs/opencrvs-core/issues/7585)
+
+### Improvements
+
+- **Upgrade node version to 22**
+
+  This version enforces environment to have Node 22 installed (supported until 30 April 2027) and removes support for Node 18 for better performance and using [new features](https://github.com/nodejs/node/releases/tag/v22.0.0) offered by NodeJS
+
+  - Use nvm to upgrade your local development environment to use node version `22.x.x.`
+  - Add conditions for the certified copy certificate to ensure it's only available to children who are 1 year or older. [#9684](https://github.com/opencrvs/opencrvs-core/issues/9684)
+
+- **Upgraded MinIO** to RELEASE.2025-06-13T11-33-47Z and MinIO Client (mc) to RELEASE.2025-05-21T01-59-54Z and ensured compatibility across both amd64 and arm64 architectures.
+
+- Remove the remnants of OpenHIM from the backup & restore scripts. [#9732](https://github.com/opencrvs/opencrvs-core/issues/9732)
+
+- Store system monitoring data for 1 month [#10515](https://github.com/opencrvs/opencrvs-core/issues/10515)
+
+- Restricted filesystem usage for journal service and file rotation strategy [#10518](https://github.com/opencrvs/opencrvs-core/issues/10518))
+
+
+### Bug fixes
+
+- Allow non-interactive upgrades with apt [#10204](https://github.com/opencrvs/opencrvs-core/issues/10204)
+- Don't restart events service after data cleanup [#10704](https://github.com/opencrvs/opencrvs-core/issues/10704)
+
+
+## 1.8.1
+
+### Bug fixes
+
+- Ensure that place of birth/death only shows active facilities/offices on the form [#9311](https://github.com/opencrvs/opencrvs-core/issues/9311)
+
+## 1.8.0
+
+### New features
+
+- Added a local virtual machine setup for testing Ansible playbooks locally (on MacOS and Ubuntu ). Check [provision.ipynb](infrastructure/local-development/provision.ipynb) for more details.
+
+### Improvements
+
+- **Upgrade ELK stack** to a AGPLv3 licensed version 8.16.4 [#8749](https://github.com/opencrvs/opencrvs-core/issues/8749)
+- Added Build summary and refactored deployment workflow to be more clear [#6984](https://github.com/opencrvs/opencrvs-core/issues/6984)
+- Build OpenCRVS release images for arm devices [#9455](https://github.com/opencrvs/opencrvs-core/issues/9455)
+- **Introduced `single_node` variable in inventory files** to define whether single-node clusters are allowed, set to false in production to enforce use of at least a two-node cluster. [#6918](https://github.com/opencrvs/opencrvs-core/issues/6918)
+- **Github runners upgraded** to latest Ubuntu LTS release 24.04 [#7045](https://github.com/opencrvs/opencrvs-core/issues/7045) and apply sticky node version from .nvmrc [#423](https://github.com/opencrvs/opencrvs-countryconfig/pull/423)
+- Updated `seed-data.yml` GitHub Actions workflow to use the new `data-seeder` Docker image instead of cloning the entire `opencrvs-core` repository. This improves CI performance and simplifies the data seeding process. [#8976](https://github.com/opencrvs/opencrvs-core/issues/8976)
+
+### Bug Fixes
+
+- Added `swarm` tag to all tasks within the `swarm.yaml` playbook, previously it was missing. [#9252](https://github.com/opencrvs/opencrvs-core/issues/9252)
+- Restrict supported key exchange, cipher and MAC algorithms for SSH configuration [#7542](https://github.com/opencrvs/opencrvs-core/issues/7542)
+
+## [1.7.4](https://github.com/opencrvs/opencrvs-core/compare/v1.7.3...v1.7.4)
+
+### Bug fixes
+
+- Remove special characters from role ids on generation [#10049](https://github.com/opencrvs/opencrvs-core/issues/10049)
+
+## 1.7.3
+
+No changes
+
+## 1.7.2
+
+### Bug fixes
+
+- A configuration example of how to use middle names in a supported way has been added, inspired by [#9369](<(https://github.com/opencrvs/opencrvs-core/issues/9369)>)
+- InfluxDB `max-values-per-tag` is now set to unlimited to temporarily fix the following error when clearing data from a deployed environment
+
+```
+partial write: max-values-per-tag limit exceeded (100000/100000)
+```
+
+https://github.com/opencrvs/opencrvs-countryconfig/pull/393
+
+- Added `user.update:my-jurisdiction` scope to Local System Admin to allow editing of users in jurisdiction [#732](https://github.com/opencrvs/opencrvs-countryconfig/pull/732)
+
+### New features
+
+- **Time field 12-hour format**: To enable the 12-hour (AM/PM) format of the `TimeField`, set the `use12HourFormat` property to `true`. [#8336](https://github.com/opencrvs/opencrvs-core/issues/8336)
+  ```
+  {
+    name: 'time',
+    custom: true,
+    type: 'TIME',
+    use12HourFormat: true,
+    ...otherProp
+  }
+  ```
+- **Control over allowed user creation/update**: user.create\[role=role_a|role_b\] & user.update\[role=role_a|role_b\] can be used to control users of which role can be created/updated by users of a certain role.
+
+### Breaking changes
+
+- Roles with the following scopes: `USER_CREATE, USER_CREATE_MY_JURISDICTION` & `USER_UPDATE, USER_UPDATE_MY_JURISDICTION` need to have the `user.create[role=role_a|role_b]` & `user.update[role=role_a|role_b]` scopes added to them (replace role_a|role_b with the role IDs of your selection) in order to work as expected. If you are using custom roles, please make sure to update them accordingly.
+
+## 1.7.1
+
+### Bug fixes
+
+- "Match all" section should be present after "Match User..." in sshd_config [#653](https://github.com/opencrvs/opencrvs-countryconfig/pull/653)
+- Use yarn cache in test workflow & read the version to use from .nvmrc
+
+## 1.7.0
+
+### Migration notes
+
+In order to make the upgrade easier, there are a couple of steps that need to be performed which will make the codebase ready for the upgrade:
+
+- Run this command from the root of the countryconfig repository `curl https://raw.githubusercontent.com/opencrvs/opencrvs-countryconfig/release-v1.7.0/src/upgrade-to-1_7.ts | npx ts-node -T --cwd ./src`
+
+  It will remove `roles.csv` and generate a `roles.ts` file. It will also update the corresponding role column in `default-employees.csv` & `prod-employees.csv` while adding the corresponding translations in `client.csv`. The employee files are only used when seeding new environments, if you already have a v1.6.x of OpenCRVS deployed, the data in the environment will automatically get migrated after deploying the upgrade. The changes in these two files are made to keep the roles in sync with your previously deployed environments, if any.
+
+- After pulling in the v1.7.0 changes reject the changes incoming to `roles.ts`, `default-employees.csv` & `prod-employees.csv` files as we used the script above to auto-generate them.
+
+  The `roles.ts` file now defines all the roles available in the system. New roles can be added & existing roles can be customized by giving them different scopes.
+
+  _N.B. The default roles generated in the `roles.ts` file during migration should not be removed to maintain backwards compatibility_
+
+### Breaking changes
+
+- `INFORMANT_SIGNATURE` & `INFORMANT_SIGNATURE_REQUIRED` are now deprecated
+- Existing implementations relying on database-stored SVGs need to be updated to use the new configuration-based approach. Default certificate templates must be created for each event type, following the convention `${event}-certificate` as the certificate template ID.
+- **Roles** The previous `roles.csv` file has been deprecated. It will get removed once you run the upgrade command before pulling in the v1.7 changes. The command automatically generates a `roles.ts` file which can be used as a baseline to configure the roles as per your requirements.
+- **Github runners upgraded** to latest Ubuntu LTS release 24.04 [#7045](https://github.com/opencrvs/opencrvs-core/issues/7045) and apply sticky node version from .nvmrc [#423](https://github.com/opencrvs/opencrvs-countryconfig/pull/423)
+
+### New features
+
+- Update the translations for System user add/edit form, `Last name` to `User's surname` and `First name` to `User's first name` to make them less confusing for system users [#6830](https://github.com/opencrvs/opencrvs-core/issues/6830)
+- **User scopes** Introduce granular scopes to grant specific permissions to a particular role. The specifics about the introduced scopes can be found here: _Link to scopes description file_
+- **Refactored certificate handling:** SVGs are no longer stored in the database; streamlined configurations now include certificate details, and clients request SVGs directly via URLs.
+- Add `isAgeInYearsBetween` validator to enable validation that will constraint a date to be only valid if it falls within a specified date range. The `isInformantOfLegalAge` validator is now deprecated and removed in favor of `isAgeInYearsBetween` validator [#7636](https://github.com/opencrvs/opencrvs-core/issues/7636)
+- Add constant.humanName to allow countries to customise the format of the full name in the system for `system users` and `citizens` e.g `{LastName} {MiddleName} {Firstname}`, in any case where one of the name is not provided e.g no `MiddleName`, we'll simply render e.g `{LastName} {FirstName}` without any extra spaces if that's the order set in `country-config`. [#6830](https://github.com/opencrvs/opencrvs-core/issues/6830)
+
+### Improvements
+
+- Auth token, ip address, remote address, mobile number, email redacted/masked from server log
+- Optimized deployment times by making docker images download in parallel.
+- Country alpha3 ISO code now is derived from variables to the Docker Compose files and don't need to be hard coded
 
 ### Bug fixes
 
 - Protect individual certificate endpoint with token
 - Kibana disk space alerts now work regardless of your disk device names. Alerts listen devices mounted both to `/` and `/data` (encrypted data partition)
 - "Publish release" pipeline now correctly uses the "Branch to build from" value as the branch to be tagged. Previously it tried tagging "master". "Release tag" is also now used as the release version as is instead of it being read from `package.json`.
-
-### Breaking changes
-
-- **Title** Description
-
-### Improvements
-
-- Auth token, ip address, remote address, mobile number, email redacted/masked from server log
+- Backup process now doesn't require internet connection to download docker images thus working more reliably when internet connections are unreliable. Previously non-active images were cleaned nightly, now we only do it as part of deployment. [#7896](https://github.com/opencrvs/opencrvs-core/issues/7896)
+- We make sure that the automatic cleanup job only runs before deployment (instead of cron schedule cleanup).
+- Previously it was possible MongoDB replica set and users were left randomly uninitialised after a deployment. MongoDB initialisation container now retries on failure.
+- On some machines 'file' utility was not preinstalled causing provision to fail. We now install the utility if it doesn't exist.
 
 ### Infrastructure breaking changes
 
-- **Title** Description
+> [!CAUTION]
+> All Metabase configuration that is not persisted into `metabase.init.db.sql` will be cleared as part of upgrading to OpenCRVS 1.7.0 and on all proceeding deployments!
 
-### New features
+- Metabase data is no longer backed up by the default OpenCRVS country configuration. This was done to ensure Metabase can properly be started up as part of OpenCRVS deployment, even when there has been a Metabase version upgrade. To learn more about how Metabase should be configured in a persistent manner, please refer our documentation on [4.2.5.2 Configuring Metabase Dashboards](https://documentation.opencrvs.org/setup/3.-installation/3.2-set-up-your-own-country-configuration/3.2.5-set-up-application-settings/4.2.5.2-configuring-metabase-dashboards) [#8043](https://github.com/opencrvs/opencrvs-core/issues/8043)
 
-- **Major new feature** Description
-- Misc new feature
+- `Reset environment` github action [infrastructure/clear-all-data.sh](infrastructure/clear-all-data.sh) now wipes all elasticsearch indices [#583](https://github.com/opencrvs/opencrvs-countryconfig/pull/583)
 
 ### New content keys requiring translation
 
 ```
-INSERT CSV ROWS IN ENGLISH ONLY
+action.action,Label for action button,Action
+action.archive,Label for archive record button in dropdown menu,Archive declaration
+action.assignee,Label for asignee,Assigned to {name } at {officeName}
+action.correct,Label for correct record button in dropdown menu,Correct record
+action.issue,Label for reinstate issue button in dropdown menu,Issue certificate
+action.print,Label for reinstate print button in dropdown menu,Print certified copy
+action.reinstate,Label for reinstate record button in dropdown menu,Reisntate declaration
+action.review.correction,Label for review correction in dropdown menu,Review correction request
+action.review.declaration,Label for review declaration button in dropdown menu,"Review {isDuplicate, select, true{potential duplicate} other{declaration}}"
+action.update,Label for reinstate update button in dropdown menu,Update declaration
+action.view,Label for view button in dropdown menu,View {recordOrDeclaration}
+advancedSearch.form.recordStatusValidated,Option for form field: status of record,Validated
+advancedSearch.form.timePeriodHelperText,Helper text for input Time period,Period of time since the record status changed
+advancedSearch.form.timePeriodLabel,Label for input Time period,Time period
+advancedSearchResult.pill.timePeriod,The label for time period in active advancedSearchParams,Time period
+certificate.selectTemplate,Select certificate template,Type
+certificate.selectedTemplate,Selected certificate template,Selected certificate template
+certificates.birth.certificate,Birth Certificate,Birth Certificate
+certificates.birth.certificate.copy,Birth Certificate Certified Copy,Birth Certificate Certified Copy
+certificates.birth.registration.receipt,Birth Registration Receipt,Birth Registration Receipt
+certificates.death.certificate,Death Certificate,Death Certificate
+certificates.death.certificate.copy,Death Certificate Certified Copy,Death Certificate Certified Copy
+certificates.marriage.certificate,Marriage Certificate,Marriage Certificate
+certificates.marriage.certificate.copy,Marriage Certificate Certified Copy,Marriage Certificate Certified Copy
+changeModal.cancel,The label for cancel button of change modal,Cancel
+changeModal.continue,The label for continue button of change modal,Continue
+changeModal.description,The description for change modal,A record will be created of any changes you make
+changeModal.title,The title for change modal,Edit declaration?
+config.emailAllUsers.subtitle,Subtitle for email all users,This email will be sent to all users who are active. Emails will be sent over the next 24 hours. Only one email can be sent per day
+constants.humanName,Formatted full name, {lastName} {middleName} {firstName}
+event.history.timeFormat,"MMMM dd, yyyy · hh.mm a","MMMM dd, yyyy · hh.mm a"
+event.tennis-club-membership.action.declare.form.label,This is what this form is referred as in the system,Tennis club membership application
+event.tennis-club-membership.action.declare.form.section.recommender.field.firstname.label,This is the label for the field,Recommender's first name
+event.tennis-club-membership.action.declare.form.section.recommender.field.id.label,This is the label for the field,Recommender's membership ID
+event.tennis-club-membership.action.declare.form.section.recommender.field.surname.label,This is the label for the field,Recommender's surname
+event.tennis-club-membership.action.declare.form.section.recommender.title,This is the title of the section,Who is recommending the applicant?
+event.tennis-club-membership.action.declare.form.section.who.field.dob.label,This is the label for the field,Applicant's date of birth
+event.tennis-club-membership.action.declare.form.section.who.field.firstname.label,This is the label for the field,Applicant's first name
+event.tennis-club-membership.action.declare.form.section.who.field.surname.label,This is the label for the field,Applicant's surname
+event.tennis-club-membership.action.declare.form.section.who.title,This is the title of the section,Who is applying for the membership?
+event.tennis-club-membership.action.declare.form.version.1,This is the first version of the form,Version 1
+event.tennis-club-membership.action.declare.label,This is shown as the action name anywhere the user can trigger the action from,Send an application
+event.tennis-club-membership.label,This is what this event is referred as in the system,Tennis club membership application
+exitModal.cancel,The label for cancel button in exit modal,Cancel
+exitModal.exitWithoutSaving,The title for exit without saving modal,Exit without saving changes?
+exitModal.exitWithoutSavingDescription,The description for exit without saving modal,You have unsaved changes on your declaration form. Are you sure you want to exit without saving?
+form.field.label.informantRelation.other,,Other ({otherInformantType})
+form.field.label.userFirstName,,User's first name
+form.field.label.userSurname,,User's surname
+form.section.label.timePeriodLast30Days,Label for option of time period select: last 30 days,Last 30 days
+form.section.label.timePeriodLast7Days,Label for option of time period select: last 7 days,Last 7 days
+form.section.label.timePeriodLast90Days,Label for option of time period select: last 90 days,Last 90 days
+form.section.label.timePeriodLastYear,Label for option of time period select: last year,Last year
+integrations.type.nationalId,Label for national id,National id
+navigation.my-drafts,My drafts label in navigation,My drafts
+print.certificate.collector.form.error.template,Form level error for collector form template type,Please select certificate type
+registerModal.cancel,The label for cancel button of register modal,Cancel
+registerModal.description,The description for register modal,The declarant will be notified of this correction and a record of this decision will be recorded
+registerModal.register,The label for register button of register modal,Register
+registerModal.title,The title for register modal,Register the member?
+rejectModal.archive,The label for archive button of reject modal,Archive
+rejectModal.cancel,The label for cancel button of reject modal,Cancel
+rejectModal.description,The description for reject modal,Please describe the updates required to this record for follow up action.
+rejectModal.markAsDuplicate,The label for mark as duplicate checkbox of reject modal,Mark as a duplicate
+rejectModal.sendForUpdate,The label for send For Update button of reject modal,Send For Update
+rejectModal.title,The title for reject modal,Reason for rejection?
+reloadmodal.body,Body of reload modal,There’s a new version of {app_name} available. Please update to continue.
+reloadmodal.button.update,Label of update button,Update
+reloadmodal.title,Title when update is available,Update available
+reviewAction.description,The description for review action,"By clicking register, you confirm that the information entered is correct and the member can be registered."
+reviewAction.register,The label for register button of review action,Register
+reviewAction.reject,The label for reject button of review action,Reject
+reviewAction.title,The title for review action,Register member
+userRole.fieldAgent,Name for user role Field Agent,Field Agent
+userRole.healthcareWorker,Name for user role Healthcare Worker,Healthcare Worker
+userRole.communityLeader,Name for user role Community Leader,Community Leader
+userRole.localRegistrar,Name for user role Local Registrar,Local Registrar
+userRole.localSystemAdmin,Name for user role Local System Admin,Local System Admin
+userRole.nationalRegistrar,Name for user role National Registrar,National Registrar
+userRole.nationalSystemAdmin,Name for user role National System Admin,National System Admin
+userRole.performanceManager,Name for user role Performance Manager,Performance Manager
+userRole.policeOfficer,Name for user role Police Officer,Police Officer
+userRole.registrationAgent,Name for user role Registration Agent,Registration Agent
+userRole.hospitalClerk,Name for user role Hospital Clerk,Hospital Clerk
+validations.isAgeInYearsBetween,The error message that appears when age for the given date is outside the legal age range,Age must be between {min} and {max} years.
+wq.noRecords.draft,No records messages for empty draft tab,No records in my drafts
 ```
 
-## Bug fixes
+## 1.6.4
 
-- TBC
+### Bug fixes
 
-## 1.6.0 Release candidate
+- Query the location tree directly from the config service to improve performance for large datasets
+
+## 1.6.3
 
 ### Breaking changes
+
+- Add constant.humanName to allow countries to customise the format of the full name in the sytem for `sytem users` and `citizens` e.g `{LastName} {MiddleName} {Firstname}`, in any case where one of the name is not provided e.g no `MiddleName`, we'll simply render e.g `{LastName} {FirstName}` without any extra spaces if that's the order set in `country-config`. [#6830](https://github.com/opencrvs/opencrvs-core/issues/6830)
+
+## 1.6.2
+
+## 1.6.1
+
+### Bug fixes
+
+- We make sure that the automatic cleanup job only runs before deployment (instead of cron schedule cleanup).
+- Previously it was possible MongoDB replica set and users were left randomly uninitialised after a deployment. MongoDB initialisation container now retries on failure.
+- On some machines 'file' utility was not preinstalled causing provision to fail. We now install the utility if it doesn't exist.
+
+## 1.6.0
+
+### Breaking changes
+
+- **Notification Flags** The configuration of various notifications is now controlled from `countryconfig` instead of being handled in the UI, as notification settings are not something that should be changed on the fly. To simplify this process, we have moved the settings to the `application-config.ts` file. From now on, the notifications can be managed in the `notificationForRecord` object defined in the mentioned file. Any changes will take effect after a new deployment.
+
+  **_Country implementors must define the `notificationForRecord` object in the `application-config.ts` file to enable the notifications they want. Not doing so will keep notifications disabled by default._**
 
 - **Gateways searchEvents API updated** `operationHistories` only returns `operationType` & `operatedOn` due to the other fields being unused in OpenCRVS
 - **Config changes to review/preview and signatures** Core used to provide review/preview section by default which are now removed and need to be provided from countryconfig. The signature field definitions (e.g. informant signature, bride signature etc.) were hard coded in core which also have now been removed. The signatures can now be added through the review/preview sections defined in countryconfig just like any other field. You can use the following section definition as the default which is without any additional fields. We highly recommend checking out our reference country repository which has the signature fields in it's review/preview sections
@@ -78,6 +323,7 @@ INSERT CSV ROWS IN ENGLISH ONLY
   5. 'PHONE_NUMBER',
   6. 'EMAIL'
 - Updated `allowedFileFormats` in signature fields to use MIME types (`image/png`, `image/jpg`, `image/jpeg`, `image/svg`) instead of simple file extensions. If you are already using the `allowedFileFormats` field in your implementation, please ensure to update the format accordingly.
+- The details exists conditionals for the various sections i.e. father, mother, spouse has to use the `values.detailsExist` property instead of accessing it from `draftData.[sectionName].detailsExists`. This is due to the fact that the draftData is not populated until any changes have been made to any of the fields in the current section.
 
 ### New features
 
@@ -87,11 +333,19 @@ INSERT CSV ROWS IN ENGLISH ONLY
 - If there is only one option in the document uploader select, then it stays hidden and only the upload button is showed with the only option being selected by default
 - The select options in DOCUMENT_UPLOADER_WITH_OPTION field can now be hidden using the new `optionCondition` property. It works similarly to the same property available in SELECT_WITH_OPTIONS field
 
-* **ElasticSearch reindexing**
-
-Allows reindexing ElasticSearch via a new search-service endpoint `reindex`. We're replacing the original `ocrvs` index with timestamped ones. This is done automatically when upgrading and migrating, but this is an important architectural change that should be noted. More details in [#7033](https://github.com/opencrvs/opencrvs-core/pull/7033).
+* **ElasticSearch reindexing** Allows reindexing ElasticSearch via a new search-service endpoint `reindex`. We're replacing the original `ocrvs` index with timestamped ones. This is done automatically when upgrading and migrating, but this is an important architectural change that should be noted. More details in [#7033](https://github.com/opencrvs/opencrvs-core/pull/7033).
 
 - Introduce a new certificate handlebar "preview" which can be used to conditionally render some svg element when previewing the certificate e.g. background image similar to security paper
+
+- **Notification flags**: Added notification flags for `BIRTH`, `DEATH`, and `MARRIAGE` events, including:
+
+  - `sent-notification`
+  - `sent-notification-for-review`
+  - `sent-for-approval`
+  - `registered`
+  - `sent-for-updates`
+
+- **`/record-notification` API**: Endpoint to check enabled notifications for records. The API returns the `notificationForRecord` object for `BIRTH` and `DEATH` events, listing their respective flags. Route configuration includes description and tags for API documentation.
 
 ### New content keys requiring translation
 
@@ -103,6 +357,14 @@ INSERT CSV ROWS IN ENGLISH ONLY
 
 - Github pipeline dedicated for reading secrets and variables from other environments now checks if GH_TOKEN is still valid before attempting other operations
 - Remove unnecessary UI dividers that add in various sections of the declaration forms(e.g the Death, Birth and Marriage forms) [#244](https://github.com/opencrvs/opencrvs-countryconfig/pull/244)
+- Update template transformer for fields `informantType` and `otherInformantType` that fixes the bug of unavailability of these template fields [#5952](https://github.com/opencrvs/opencrvs-countryconfig/pull/5952)
+- Fixed missing InitialValue property to set initial values based on an expression
+
+## 1.5.2 (https://github.com/opencrvs/opencrvs-countryconfig/compare/v1.5.1...v1.5.2)
+
+## Bug fixes
+
+- Broken email alerts from low disk space are now fixed [293](https://github.com/opencrvs/opencrvs-countryconfig/pull/293)
 
 ## 1.5.0 (https://github.com/opencrvs/opencrvs-countryconfig/compare/v1.4.1...v1.5.0)
 
@@ -187,7 +449,7 @@ Follow the descriptions in the migration notes to re-provision all servers safel
 advancedSearch.form.recordStatusCorrectionRequested,Option for form field: status of record,Correction requested
 config.emailAllUsers.modal.supportingCopy,Label for send email all users confirmation supporting copy,User will receive emails over the next 24 hours
 config.emailAllUsers.modal.title,Label for send email all users confirmation title,Send email to all users?
-config.emailAllUsers.subtitle,Subtitle for email all users,This email will be sent to all users you are active. Emails will be sent over the next 24 hours. Only one email can be sent per day
+config.emailAllUsers.subtitle,Subtitle for email all users,This email will be sent to all users who are active. Emails will be sent over the next 24 hours. Only one email can be sent per day
 config.emailAllUsers.title,Title for email all users,Email all users
 config.userRoles.language,Language name,"{language, select, en {English} fr {French} other {{language}}}"
 constants.emailBody,Label for email body input,Message

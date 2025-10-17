@@ -135,11 +135,17 @@ export function getFieldMapping(
         },
         template: {
           fieldName: certificateHandlebar,
-          operation: 'selectTransformer'
+          operation: 'fieldValueTransformer',
+          parameters: ['relationship']
         }
       }
     case 'otherInformantType':
       return {
+        template: {
+          fieldName: certificateHandlebar,
+          operation: 'fieldValueTransformer',
+          parameters: ['otherRelationship']
+        },
         mutation: {
           operation: 'fieldValueSectionExchangeTransformer',
           parameters: ['registration', 'otherInformantType']
@@ -270,6 +276,7 @@ export function getFieldMapping(
       }
     case 'familyName':
     case 'firstNames':
+    case 'middleName':
     case 'marriedLastName':
       return {
         template: {
@@ -290,7 +297,7 @@ export function getFieldMapping(
       return {
         template: {
           fieldName: certificateHandlebar,
-          operation: 'nationalityTransformer'
+          operation: 'plainInputTransformer'
         },
         mutation: {
           operation: 'fieldToArrayTransformer'

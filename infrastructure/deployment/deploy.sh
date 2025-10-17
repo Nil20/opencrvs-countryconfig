@@ -210,6 +210,20 @@ rotate_secrets() {
   configured_ssh '/opt/opencrvs/infrastructure/rotate-secrets.sh '$files_to_rotate' | tee -a '$LOG_LOCATION'/rotate-secrets.log'
 }
 
+# Take generated passwords and save them to a file
+# File is taken from github runner and transferred to the server
+# Later docker secret is created from this file and used by docker-compose
+save_redis_acl(){
+  echo "Saving redis acl"
+  printf """
+user default on >$DEFAULT_REDIS_PASSWORD ~* +@all
+user $GATEWAY_REDIS_USERNAME on >$GATEWAY_REDIS_PASSWORD ~* +@all
+user $WORKFLOW_REDIS_USERNAME on >$WORKFLOW_REDIS_PASSWORD ~* +@all
+user $AUTH_REDIS_USERNAME on >$AUTH_REDIS_PASSWORD ~* +@all
+user $WEBHOOKS_REDIS_USERNAME on >$WEBHOOKS_REDIS_PASSWORD ~* +@all
+""" > $INFRASTRUCTURE_DIRECTORY/redis-acl.conf
+  echo "Redis acl saved to $INFRASTRUCTURE_DIRECTORY/redis-acl.conf"
+}
 
 # Takes in a space separated string of docker-compose.yml files
 # returns a new line separated list of images defined in those files
@@ -268,6 +282,11 @@ split_and_join() {
    SPLIT=$(echo $text | sed -e "s/$separator_for_splitting/$separator_for_joining/g")
    echo $SPLIT
 }
+cleanup_docker_images()
+{
+   echo "Cleaning up the docker images"
+   configured_ssh "/usr/bin/docker system prune -af | sudo tee -a /var/log/docker-prune.log > /dev/null"
+}
 
 docker_stack_deploy() {
   echo "Deploying this environment: $ENVIRONMENT_COMPOSE"
@@ -289,16 +308,25 @@ docker_stack_deploy() {
     do
       echo "Server failed to download $tag. Retrying..."
       sleep 5
-    done
+    done &
   done
-
+  wait
+  echo "Images are successfully downloaded"
   echo "Updating docker swarm stack with new compose files"
 
   configured_ssh 'cd /opt/opencrvs && \
     docker stack deploy --prune -c '$(split_and_join " " " -c " "$(to_remote_paths $COMPOSE_FILES_USED)")' --with-registry-auth opencrvs'
 }
 
+get_opencrvs_version() {
+  PREVIOUS_VERSION=$(configured_ssh "docker service ls | grep opencrvs_base | cut -d ':' -f 2")
+  echo "Previous opencrvs version: $PREVIOUS_VERSION"
+  echo "Current opencrvs version: $VERSION"
+}
+
 validate_options
+
+get_opencrvs_version
 
 # Create new passwords for all MongoDB users created in
 # infrastructure/mongodb/docker-entrypoint-initdb.d/create-mongo-users.sh
@@ -314,6 +342,21 @@ export PERFORMANCE_MONGODB_PASSWORD=`generate_password`
 export OPENHIM_MONGODB_PASSWORD=`generate_password`
 export WEBHOOKS_MONGODB_PASSWORD=`generate_password`
 export NOTIFICATION_MONGODB_PASSWORD=`generate_password`
+export EVENTS_MONGODB_PASSWORD=`generate_password`
+
+export DEFAULT_REDIS_PASSWORD=`generate_password`
+export GATEWAY_REDIS_USERNAME=`generate_password`
+export GATEWAY_REDIS_PASSWORD=`generate_password`
+export WORKFLOW_REDIS_USERNAME=`generate_password`
+export WORKFLOW_REDIS_PASSWORD=`generate_password`
+export AUTH_REDIS_USERNAME=`generate_password`
+export AUTH_REDIS_PASSWORD=`generate_password`
+export WEBHOOKS_REDIS_USERNAME=`generate_password`
+export WEBHOOKS_REDIS_PASSWORD=`generate_password`
+
+export EVENTS_APP_POSTGRES_PASSWORD=`generate_password`
+export EVENTS_MIGRATOR_POSTGRES_PASSWORD=`generate_password`
+export ANALYTICS_POSTGRES_PASSWORD=`generate_password`
 
 #
 # Elasticsearch credentials
@@ -340,6 +383,7 @@ for compose_file in ${COMPOSE_FILES_DOWNLOADED_FROM_CORE[@]}; do
 done
 
 validate_environment_variables
+save_redis_acl
 
 if [ "$SSH_PORT" -eq 22 ]; then
     SSH_HOST_TO_CHECK="$SSH_HOST"
@@ -377,6 +421,8 @@ configured_ssh "docker login -u $DOCKER_USERNAME -p $DOCKER_TOKEN"
 configured_ssh "/opt/opencrvs/infrastructure/setup-deploy-config.sh $HOST"
 
 rotate_secrets
+
+cleanup_docker_images
 
 docker_stack_deploy
 

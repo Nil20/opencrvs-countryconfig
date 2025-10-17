@@ -14,17 +14,26 @@ window.config = {
   LOGIN_URL: 'http://localhost:3020',
   AUTH_URL: 'http://localhost:7070/auth/',
   MINIO_BUCKET: 'ocrvs',
+  MINIO_URL: 'http://localhost:3535/ocrvs/',
+  MINIO_BASE_URL: 'http://localhost:3535', // URL without path/bucket information, used for file uploads, v2
   COUNTRY_CONFIG_URL: 'http://localhost:3040',
   // Country code in uppercase ALPHA-3 format
   COUNTRY: 'FAR',
   LANGUAGES: 'en,fr',
   SENTRY: '',
-  // Use the values in comments when Metabase is running locally
-  // http://localhost:4444/public/dashboard/acae0527-74be-4804-a3ee-f8b3c9c8784c#bordered=false&titled=false&refresh=300
-  LEADERBOARDS_DASHBOARD_URL: '',
-  // http://localhost:4444/public/dashboard/fec78656-e4f9-4b51-b540-0fed81dbd821#bordered=false&titled=false&refresh=300
-  REGISTRATIONS_DASHBOARD_URL: '',
-  // http://localhost:4444/public/dashboard/a17e9bc0-15a2-4bd1-92fa-ab0f346227ca#bordered=false&titled=false&refresh=300
-  STATISTICS_DASHBOARD_URL: '',
-  FEATURES: {}
+  DASHBOARDS: [
+    {
+      id: 'leaderboards',
+      title: {
+        id: 'navigation.leaderboards',
+        defaultMessage: 'Development dashboard',
+        description: 'Menu item for development dashboard'
+      },
+      url: 'http://localhost:3040/ping',
+    }
+  ],
+  FEATURES: {
+    // The V2_EVENTS variable is passed down from src/index.ts:309
+    V2_EVENTS: {{ V2_EVENTS }}
+  }
 }

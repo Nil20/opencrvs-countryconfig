@@ -13,6 +13,7 @@ export const applicationConfig = {
     PRINT_IN_ADVANCE: true
   },
   COUNTRY_LOGO: countryLogo,
+  SYSTEM_IANA_TIMEZONE: 'Asia/Dhaka', // Default timezone for the country. Basis for date and time calculations during searches.
   CURRENCY: {
     languagesAndCountry: ['en-US'],
     isoCode: 'USD'
@@ -25,6 +26,24 @@ export const applicationConfig = {
     },
     PRINT_IN_ADVANCE: true
   },
+  ADMIN_STRUCTURE: [
+    {
+      id: 'province',
+      label: {
+        id: 'field.address.province.label',
+        defaultMessage: 'Province',
+        description: 'Label for province in address'
+      }
+    },
+    {
+      id: 'district',
+      label: {
+        id: 'field.address.district.label',
+        defaultMessage: 'District',
+        description: 'Label for district in address'
+      }
+    }
+  ],
   PHONE_NUMBER_PATTERN: '^0(7|9)[0-9]{8}$',
   NID_NUMBER_PATTERN: '^[0-9]{10}$',
   LOGIN_BACKGROUND: {
@@ -44,10 +63,8 @@ export const applicationConfig = {
     DEATH_REGISTRATION: true,
     MARRIAGE_REGISTRATION: false,
     EXTERNAL_VALIDATION_WORKQUEUE: false,
-    INFORMANT_SIGNATURE: false,
     PRINT_DECLARATION: false,
-    DATE_OF_BIRTH_UNKNOWN: true,
-    INFORMANT_SIGNATURE_REQUIRED: false
+    DATE_OF_BIRTH_UNKNOWN: true
   },
   USER_NOTIFICATION_DELIVERY_METHOD: 'email', // or 'sms', or '' ... You can use 'sms' for WhatsApp
   INFORMANT_NOTIFICATION_DELIVERY_METHOD: 'email', // or 'sms', or '' ... You can use 'sms' for WhatsApp
@@ -65,3 +82,34 @@ export const applicationConfig = {
 }
 
 export const COUNTRY_WIDE_CRUDE_DEATH_RATE = 10
+
+type EventNotificationFlags = {
+  'sent-notification'?: boolean
+  'sent-notification-for-review'?: boolean
+  'sent-for-approval'?: boolean
+  registered?: boolean
+  'sent-for-updates'?: boolean
+}
+
+type NotificationFlags = {
+  BIRTH?: EventNotificationFlags
+  DEATH?: EventNotificationFlags
+  MARRIAGE?: EventNotificationFlags
+}
+
+export const notificationForRecord: NotificationFlags = {
+  BIRTH: {
+    'sent-notification': true,
+    'sent-notification-for-review': true,
+    'sent-for-approval': true,
+    registered: true,
+    'sent-for-updates': true
+  },
+  DEATH: {
+    'sent-notification': true,
+    'sent-notification-for-review': true,
+    'sent-for-approval': true,
+    registered: true,
+    'sent-for-updates': true
+  }
+}

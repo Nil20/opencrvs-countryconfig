@@ -14,6 +14,10 @@ filebeat.inputs:
   - type: log
     enabled: true
     paths:
+      - /var/log/opencrvs-backup.error.log
+  - type: log
+    enabled: true
+    paths:
       - /var/log/opencrvs-restore.log
 
 # https://github.com/elastic/beats/blob/master/filebeat/filebeat.reference.yml
@@ -66,7 +70,7 @@ monitoring:
 
 #============================== Index lifecycle management ===============================
 setup.ilm.enabled: true
-setup.ilm.policy_name: 'beat-opencrvs-rollover-policy'
+setup.ilm.policy_name: 'filebeat-opencrvs-rollover-policy'
 setup.ilm.policy_file: /usr/share/filebeat/rollover-policy.json
 setup.ilm.check_exists: true
 setup.ilm.overwrite: true
